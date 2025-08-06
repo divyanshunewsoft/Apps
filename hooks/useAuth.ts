@@ -9,6 +9,14 @@ export function useAuth() {
   useEffect(() => {
     let isMounted = true;
 
+    // If Supabase is not configured, set loading to false and return
+    if (!supabase) {
+      if (isMounted) {
+        setLoading(false);
+      }
+      return;
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (isMounted) {
@@ -37,9 +45,10 @@ export function useAuth() {
     user,
     loading,
     signIn: (email: string, password: string) => 
-      supabase.auth.signInWithPassword({ email, password }),
+      supabase ? supabase.auth.signInWithPassword({ email, password }) : Promise.reject(new Error('Supabase not configured')),
     signUp: (email: string, password: string) => 
-      supabase.auth.signUp({ email, password }),
-    signOut: () => supabase.auth.signOut(),
+      supabase ? supabase.auth.signUp({ email, password }) : Promise.reject(new Error('Supabase not configured')),
+    signOut: () => 
+      supabase ? supabase.auth.signOut() : Promise.reject(new Error('Supabase not configured')),
   };
 }
