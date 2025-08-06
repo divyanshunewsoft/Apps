@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Calendar, Clock, User, ArrowLeft } from 'lucide-react-native';
+import { Calendar, Clock, User, ArrowLeft, ExternalLink } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import { BookingForm } from '@/types/database';
 
 const coaches = [
   { id: '1', name: 'Rinesh Kumar', specialty: 'Lean Six Sigma Master', rating: 4.9 },
@@ -19,22 +21,32 @@ const topics = [
 ];
 
 export default function BookingScreen() {
+  const [bookingForms, setBookingForms] = useState<BookingForm[]>([]);
   const [selectedCoach, setSelectedCoach] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedTime, setSelectedTime] = useState('');
-  const [selectedTopic, setSelectedTopic] = useState('');
-  const [customTopic, setCustomTopic] = useState('');
-  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    fetchBookingForms();
+  }, []);
+
+  const fetchBookingForms = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('booking_forms')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      setBookingForms(data || []);
+    } catch (error) {
+      console.error('Error fetching booking forms:', error);
+    }
+  };
 
   const handleBooking = () => {
-    // Handle booking submission
-    console.log('Booking submitted:', {
-      coach: selectedCoach,
-      date: selectedDate,
-      time: selectedTime,
-      topic: selectedTopic === 'Custom Topic' ? customTopic : selectedTopic,
-      notes,
-    });
+    const selectedForm = bookingForms.find(form => form.id === selectedCoach);
+    if (selectedForm) {
+      Linking.openURL(selectedForm.form_url);
+    }
   };
 
   return (
@@ -56,125 +68,53 @@ export default function BookingScreen() {
         {/* Coach Selection */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Select Your Coach</Text>
-          {coaches.map((coach) => (
+          {bookingForms.map((form) => (
             <TouchableOpacity
-              key={coach.id}
+              key={form.id}
               style={[
                 styles.coachCard,
-                selectedCoach === coach.id && styles.selectedCard
+                selectedCoach === form.id && styles.selectedCard
               ]}
-              onPress={() => setSelectedCoach(coach.id)}
+              onPress={() => setSelectedCoach(form.id)}
               activeOpacity={0.7}>
               <View style={styles.coachInfo}>
                 <View style={styles.coachAvatar}>
-                  <Text style={styles.avatarText}>{coach.name.charAt(0)}</Text>
+                  <Text style={styles.avatarText}>{form.coach_name.charAt(0)}</Text>
                 </View>
                 <View style={styles.coachDetails}>
-                  <Text style={styles.coachName}>{coach.name}</Text>
-                  <Text style={styles.coachSpecialty}>{coach.specialty}</Text>
-                  <Text style={styles.coachRating}>⭐ {coach.rating}/5.0</Text>
+                  <Text style={styles.coachName}>{form.coach_name}</Text>
+                  <Text style={styles.coachSpecialty}>Lean Six Sigma Expert</Text>
+                  <View style={styles.formLinkRow}>
+                    <ExternalLink size={12} color="#8b5cf6" />
+                    <Text style={styles.formLinkText}>Google Form Booking</Text>
+                  </View>
                 </View>
               </View>
-              {selectedCoach === coach.id && (
+              {selectedCoach === form.id && (
                 <View style={styles.selectedIndicator} />
               )}
             </TouchableOpacity>
           ))}
         </View>
 
-        {/* Topic Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Session Topic</Text>
-          <View style={styles.topicsGrid}>
-            {topics.map((topic, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.topicChip,
-                  selectedTopic === topic && styles.selectedChip
-                ]}
-                onPress={() => setSelectedTopic(topic)}
-                activeOpacity={0.7}>
-                <Text style={[
-                  styles.topicText,
-                  selectedTopic === topic && styles.selectedChipText
-                ]}>
-                  {topic}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          
-          {selectedTopic === 'Custom Topic' && (
-            <TextInput
-              style={styles.customTopicInput}
-              placeholder="Describe your specific topic..."
-              value={customTopic}
-              onChangeText={setCustomTopic}
-              multiline
-              numberOfLines={3}
-              placeholderTextColor="#9ca3af"
-            />
-          )}
-        </View>
-
-        {/* Time Slots */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Available Time Slots</Text>
-          <View style={styles.timeSlotsGrid}>
-            {timeSlots.map((time, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.timeSlot,
-                  selectedTime === time && styles.selectedTimeSlot
-                ]}
-                onPress={() => setSelectedTime(time)}
-                activeOpacity={0.7}>
-                <Clock size={16} color={selectedTime === time ? '#ffffff' : '#6b7280'} />
-                <Text style={[
-                  styles.timeText,
-                  selectedTime === time && styles.selectedTimeText
-                ]}>
-                  {time}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Additional Notes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Additional Notes (Optional)</Text>
-          <TextInput
-            style={styles.notesInput}
-            placeholder="Any specific requirements or questions..."
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={4}
-            placeholderTextColor="#9ca3af"
-          />
-        </View>
-
         {/* Book Button */}
         <TouchableOpacity
           style={[
             styles.bookButton,
-            (!selectedCoach || !selectedTime || !selectedTopic) && styles.bookButtonDisabled
+            !selectedCoach && styles.bookButtonDisabled
           ]}
           onPress={handleBooking}
-          disabled={!selectedCoach || !selectedTime || !selectedTopic}
+          disabled={!selectedCoach}
           activeOpacity={0.8}>
           <LinearGradient
-            colors={(!selectedCoach || !selectedTime || !selectedTopic) 
+            colors={!selectedCoach 
               ? ['#9ca3af', '#6b7280'] 
               : ['#10b981', '#059669']}
             style={styles.bookGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}>
             <Calendar size={20} color="#ffffff" />
-            <Text style={styles.bookButtonText}>Confirm Booking</Text>
+            <Text style={styles.bookButtonText}>Open Booking Form</Text>
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
@@ -272,6 +212,16 @@ const styles = StyleSheet.create({
   coachRating: {
     fontSize: 12,
     color: '#10b981',
+    fontWeight: '600',
+  },
+  formLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  formLinkText: {
+    fontSize: 12,
+    color: '#8b5cf6',
     fontWeight: '600',
   },
   selectedIndicator: {

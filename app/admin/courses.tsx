@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Modal, FlatList } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Plus, CreditCard as Edit, Trash2, Search, DollarSign, Users, ArrowLeft } from 'lucide-react-native';
+import { Plus, CreditCard as Edit, Trash2, Search, DollarSign, Users, ArrowLeft, Video, Play } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { Course } from '@/types/database';
+import { Course, CourseVideo } from '@/types/database';
 
 export default function AdminCoursesScreen() {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [courseVideos, setCourseVideos] = useState<CourseVideo[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<CourseVideo | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -21,10 +25,20 @@ export default function AdminCoursesScreen() {
     price: 0,
     thumbnail_url: '',
   });
+  const [videoFormData, setVideoFormData] = useState({
+    title: '',
+    description: '',
+    video_url: '',
+    duration: '',
+    is_preview: false,
+  });
 
   useEffect(() => {
     fetchCourses();
-  }, []);
+    if (selectedCourse) {
+      fetchCourseVideos(selectedCourse.id);
+    }
+  }, [selectedCourse]);
 
   const fetchCourses = async () => {
     try {
@@ -70,6 +84,89 @@ export default function AdminCoursesScreen() {
       console.error('Error saving course:', error);
       Alert.alert('Error', 'Failed to save course');
     }
+  };
+
+  const fetchCourseVideos = async (courseId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('course_videos')
+        .select('*')
+        .eq('course_id', courseId)
+        .order('order_index');
+      
+      if (error) throw error;
+      setCourseVideos(data || []);
+    } catch (error) {
+      console.error('Error fetching course videos:', error);
+    }
+  };
+
+  const handleSaveVideo = async () => {
+    if (!selectedCourse) return;
+
+    try {
+      const videoData = {
+        ...videoFormData,
+        course_id: selectedCourse.id,
+        order_index: courseVideos.length,
+      };
+
+      if (editingVideo) {
+        const { error } = await supabase
+          .from('course_videos')
+          .update(videoData)
+          .eq('id', editingVideo.id);
+        
+        if (error) throw error;
+        Alert.alert('Success', 'Video updated successfully');
+      } else {
+        const { error } = await supabase
+          .from('course_videos')
+          .insert([videoData]);
+        
+        if (error) throw error;
+        Alert.alert('Success', 'Video added successfully');
+      }
+      
+      setShowVideoModal(false);
+      setEditingVideo(null);
+      resetVideoForm();
+      fetchCourseVideos(selectedCourse.id);
+    } catch (error) {
+      console.error('Error saving video:', error);
+      Alert.alert('Error', 'Failed to save video');
+    }
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    Alert.alert(
+      'Delete Video',
+      'Are you sure you want to delete this video?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('course_videos')
+                .delete()
+                .eq('id', videoId);
+              
+              if (error) throw error;
+              Alert.alert('Success', 'Video deleted successfully');
+              if (selectedCourse) {
+                fetchCourseVideos(selectedCourse.id);
+              }
+            } catch (error) {
+              console.error('Error deleting video:', error);
+              Alert.alert('Error', 'Failed to delete video');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleDeleteCourse = async (courseId: string) => {
@@ -130,6 +227,35 @@ export default function AdminCoursesScreen() {
       is_premium: false,
       price: 0,
       thumbnail_url: '',
+    });
+  };
+
+  const openVideoModal = (course: Course) => {
+    setSelectedCourse(course);
+    setEditingVideo(null);
+    resetVideoForm();
+    setShowVideoModal(true);
+  };
+
+  const openEditVideoModal = (video: CourseVideo) => {
+    setEditingVideo(video);
+    setVideoFormData({
+      title: video.title,
+      description: video.description,
+      video_url: video.video_url,
+      duration: video.duration,
+      is_preview: video.is_preview,
+    });
+    setShowVideoModal(true);
+  };
+
+  const resetVideoForm = () => {
+    setVideoFormData({
+      title: '',
+      description: '',
+      video_url: '',
+      duration: '',
+      is_preview: false,
     });
   };
 
@@ -195,6 +321,11 @@ export default function AdminCoursesScreen() {
                 <View style={styles.courseActions}>
                   <TouchableOpacity
                     style={styles.actionButton}
+                    onPress={() => openVideoModal(course)}>
+                    <Video size={16} color="#10b981" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionButton}
                     onPress={() => openEditModal(course)}>
                     <Edit size={16} color="#8b5cf6" />
                   </TouchableOpacity>
@@ -210,6 +341,7 @@ export default function AdminCoursesScreen() {
         </ScrollView>
       </View>
 
+      {/* Course Modal */}
       {/* Course Modal */}
       <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modalContainer}>
@@ -305,6 +437,132 @@ export default function AdminCoursesScreen() {
                 {editingCourse ? 'Update Course' : 'Create Course'}
               </Text>
             </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Video Management Modal */}
+      <Modal visible={showVideoModal} animationType="slide" presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>
+              {selectedCourse?.title} - Videos
+            </Text>
+            <TouchableOpacity onPress={() => setShowVideoModal(false)}>
+              <Text style={styles.cancelButton}>Close</Text>
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.modalContent}>
+            {/* Add Video Button */}
+            <TouchableOpacity style={styles.addVideoButton} onPress={() => {
+              setEditingVideo(null);
+              resetVideoForm();
+            }}>
+              <Plus size={16} color="#ffffff" />
+              <Text style={styles.addVideoText}>Add New Video</Text>
+            </TouchableOpacity>
+
+            {/* Video Form */}
+            {(!editingVideo || editingVideo) && (
+              <View style={styles.videoForm}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Video Title</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={videoFormData.title}
+                    onChangeText={(text) => setVideoFormData({ ...videoFormData, title: text })}
+                    placeholder="Video title"
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Description</Text>
+                  <TextInput
+                    style={[styles.input, styles.textArea]}
+                    value={videoFormData.description}
+                    onChangeText={(text) => setVideoFormData({ ...videoFormData, description: text })}
+                    placeholder="Video description"
+                    multiline
+                    numberOfLines={3}
+                  />
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Embedded Video URL</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={videoFormData.video_url}
+                    onChangeText={(text) => setVideoFormData({ ...videoFormData, video_url: text })}
+                    placeholder="https://www.youtube.com/embed/VIDEO_ID or Vimeo embed URL"
+                  />
+                </View>
+
+                <View style={styles.formRow}>
+                  <View style={styles.formGroupHalf}>
+                    <Text style={styles.label}>Duration</Text>
+                    <TextInput
+                      style={styles.input}
+                      value={videoFormData.duration}
+                      onChangeText={(text) => setVideoFormData({ ...videoFormData, duration: text })}
+                      placeholder="e.g., 15:30"
+                    />
+                  </View>
+                  <View style={styles.formGroupHalf}>
+                    <Text style={styles.label}>Preview Video</Text>
+                    <TouchableOpacity
+                      style={[styles.checkbox, videoFormData.is_preview && styles.checkboxActive]}
+                      onPress={() => setVideoFormData({ ...videoFormData, is_preview: !videoFormData.is_preview })}>
+                      <Text style={[styles.checkboxText, videoFormData.is_preview && styles.checkboxTextActive]}>
+                        {videoFormData.is_preview ? 'Yes' : 'No'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <TouchableOpacity style={styles.saveButton} onPress={handleSaveVideo}>
+                  <Text style={styles.saveButtonText}>
+                    {editingVideo ? 'Update Video' : 'Add Video'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Existing Videos */}
+            <View style={styles.videosSection}>
+              <Text style={styles.sectionTitle}>Course Videos ({courseVideos.length})</Text>
+              {courseVideos.map((video, index) => (
+                <View key={video.id} style={styles.videoCard}>
+                  <View style={styles.videoInfo}>
+                    <Text style={styles.videoTitle}>{video.title}</Text>
+                    <Text style={styles.videoDescription} numberOfLines={2}>
+                      {video.description}
+                    </Text>
+                    <View style={styles.videoMeta}>
+                      <Text style={styles.metaText}>#{index + 1}</Text>
+                      <Text style={styles.metaText}>{video.duration}</Text>
+                      {video.is_preview && (
+                        <View style={styles.previewBadge}>
+                          <Text style={styles.previewText}>Preview</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.videoActions}>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => openEditVideoModal(video)}>
+                      <Edit size={14} color="#8b5cf6" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => handleDeleteVideo(video.id)}>
+                      <Trash2 size={14} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
           </ScrollView>
         </View>
       </Modal>
@@ -526,5 +784,75 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#ffffff',
+  },
+  addVideoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#10b981',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 20,
+    gap: 8,
+  },
+  addVideoText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  videoForm: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  videosSection: {
+    marginTop: 20,
+  },
+  videoCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  videoInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  videoTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  videoDescription: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  videoMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  previewBadge: {
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  previewText: {
+    fontSize: 8,
+    color: '#16a34a',
+    fontWeight: '600',
+  },
+  videoActions: {
+    flexDirection: 'row',
+    gap: 4,
   },
 });
