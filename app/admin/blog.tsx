@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Plus, Edit, Trash2, Search, ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
+import { Plus, CreditCard as Edit, Trash2, Search, ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { BlogPost } from '@/types/database';

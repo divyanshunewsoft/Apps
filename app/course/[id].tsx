@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Play, Lock, CheckCircle, Clock } from 'lucide-react-native';
+import { ArrowLeft, Play, Lock, CircleCheck as CheckCircle, Clock } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Course, CourseVideo } from '@/types/database';
