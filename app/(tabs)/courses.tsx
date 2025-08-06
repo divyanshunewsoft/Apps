@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BookOpen, Clock, CircleCheck as CheckCircle, Lock } from 'lucide-react-native';
+import { router } from 'expo-router';
 
 const courses = [
   {
@@ -76,6 +77,7 @@ export default function CoursesScreen() {
           <TouchableOpacity
             key={course.id}
             style={styles.courseCard}
+            onPress={() => router.push(`/course/${course.id}` as any)}
             activeOpacity={0.7}>
             <View style={styles.courseHeader}>
               <View style={styles.courseInfo}>

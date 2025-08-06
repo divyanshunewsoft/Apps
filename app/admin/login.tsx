@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'reac
 import { LinearGradient } from 'expo-linear-gradient';
 import { Shield, Eye, EyeOff } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import { verifyPassword } from '@/lib/auth';
 
 export default function AdminLoginScreen() {
   const [username, setUsername] = useState('');
@@ -11,15 +13,40 @@ export default function AdminLoginScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (username.trim() === 'Divyanshu' && password === 'Divyanshu 123') {
-      setLoading(true);
-      // Simulate loading
-      setTimeout(() => {
+    setLoading(true);
+    
+    try {
+      const { data: adminUser, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('username', username.trim())
+        .eq('is_active', true)
+        .single();
+
+      if (error || !adminUser) {
+        Alert.alert('Access Denied', 'Invalid credentials. Admin access only.');
         setLoading(false);
+        return;
+      }
+
+      const isValidPassword = await verifyPassword(password, adminUser.password_hash);
+      
+      if (isValidPassword) {
+        // Update last login
+        await supabase
+          .from('admin_users')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', adminUser.id);
+
         router.replace('/admin/dashboard');
-      }, 1000);
-    } else {
-      Alert.alert('Access Denied', 'Invalid credentials. Admin access only.');
+      } else {
+        Alert.alert('Access Denied', 'Invalid credentials. Admin access only.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      Alert.alert('Error', 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 

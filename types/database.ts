@@ -69,3 +69,50 @@ export interface UserProgress {
   completed_at?: string;
   updated_at: string;
 }
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  email: string;
+  role: 'admin' | 'super_admin';
+  created_at: string;
+  updated_at: string;
+  last_login?: string;
+  is_active: boolean;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  content: string;
+  excerpt: string;
+  author: string;
+  is_published: boolean;
+  featured_image_url?: string;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+  published_at?: string;
+}
+
+export interface CourseVideo {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string;
+  video_url: string;
+  duration: string;
+  order_index: number;
+  is_preview: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookingForm {
+  id: string;
+  coach_name: string;
+  form_url: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

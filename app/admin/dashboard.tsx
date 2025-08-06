@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Users, BookOpen, Video, Calendar, TrendingUp, Settings, LogOut } from 'lucide-react-native';
+import { Users, BookOpen, Video, Calendar, TrendingUp, Settings, LogOut, FileText } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 interface DashboardStats {
@@ -17,6 +17,7 @@ const menuItems = [
   { title: 'User Management', icon: Users, route: '/admin/users', color: '#8b5cf6' },
   { title: 'Course Management', icon: BookOpen, route: '/admin/courses', color: '#06b6d4' },
   { title: 'Video Management', icon: Video, route: '/admin/videos', color: '#10b981' },
+  { title: 'Blog Management', icon: FileText, route: '/admin/blog', color: '#ef4444' },
   { title: 'Booking System', icon: Calendar, route: '/admin/bookings', color: '#f59e0b' },
   { title: 'Analytics', icon: TrendingUp, route: '/admin/analytics', color: '#ef4444' },
   { title: 'Settings', icon: Settings, route: '/admin/settings', color: '#6b7280' },

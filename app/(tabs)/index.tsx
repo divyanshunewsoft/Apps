@@ -9,9 +9,9 @@ const DAILY_QUOTE = "Continuous improvement is better than delayed perfection. -
 const menuItems = [
   { title: 'Courses', icon: BookOpen, route: '/courses', color: '#8b5cf6' },
   { title: 'Videos', icon: Video, route: '/videos', color: '#06b6d4' },
+  { title: 'News & Blog', icon: FileText, route: '/blog', color: '#ef4444' },
   { title: 'Book a Coach', icon: Calendar, route: '/booking', color: '#10b981' },
   { title: 'Tools', icon: Download, route: '/tools', color: '#f59e0b' },
-  { title: 'Blog', icon: FileText, route: '/blog', color: '#ef4444' },
   { title: 'Community', icon: MessageCircle, route: '/community', color: '#8b5cf6' },
 ];
 
