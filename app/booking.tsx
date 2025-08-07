@@ -1,24 +1,11 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Calendar, Clock, User, ArrowLeft, ExternalLink } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { BookingForm } from '@/types/database';
-
-const coaches = [
-  { id: '1', name: 'Rinesh Kumar', specialty: 'Lean Six Sigma Master', rating: 4.9 },
-  { id: '2', name: 'Harsha Patel', specialty: 'Agile Coach', rating: 4.8 },
-  { id: '3', name: 'Divyanshu Singh', specialty: 'Process Improvement', rating: 4.9 },
-];
-
-const timeSlots = [
-  '09:00 AM', '10:00 AM', '11:00 AM', '02:00 PM', '03:00 PM', '04:00 PM'
-];
-
-const topics = [
-  'Lean Basics', 'Six Sigma Implementation', 'DMAIC Process', '5S Methodology', 'Kaizen Events', 'Custom Topic'
-];
 
 export default function BookingScreen() {
   const [bookingForms, setBookingForms] = useState<BookingForm[]>([]);
@@ -30,6 +17,11 @@ export default function BookingScreen() {
 
   const fetchBookingForms = async () => {
     try {
+      if (!supabase) {
+        console.warn('Supabase not configured');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('booking_forms')
         .select('*')

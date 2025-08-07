@@ -16,6 +16,12 @@ export default function AdminLoginScreen() {
     setLoading(true);
     
     try {
+      if (!supabase) {
+        Alert.alert('Configuration Error', 'Please connect to Supabase to use admin features.');
+        setLoading(false);
+        return;
+      }
+
       const { data: adminUser, error } = await supabase
         .from('admin_users')
         .select('*')
