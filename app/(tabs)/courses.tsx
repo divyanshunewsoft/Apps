@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BookOpen, Clock, CircleCheck as CheckCircle, Lock } from 'lucide-react-native';
+import { BookOpen, Clock, CircleCheck as CheckCircle, Lock, Play } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { supabase } from '@/lib/supabase';
+import { Course } from '@/types/database';
 
-const courses = [
+const mockCourses = [
   {
     id: 1,
     title: 'Lean Basics',
@@ -58,7 +61,52 @@ const courses = [
 ];
 
 export default function CoursesScreen() {
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
   const [userSubscription] = useState('free'); // This would come from Supabase
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      if (!supabase) {
+        // Use mock data when Supabase is not configured
+        setCourses(mockCourses.map(course => ({
+          ...course,
+          id: course.id.toString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          thumbnail_url: null,
+          order_index: course.id,
+        })));
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .order('order_index');
+      
+      if (error) throw error;
+      setCourses(data || []);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      // Fallback to mock data
+      setCourses(mockCourses.map(course => ({
+        ...course,
+        id: course.id.toString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        thumbnail_url: null,
+        order_index: course.id,
+      })));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -75,11 +123,16 @@ export default function CoursesScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {courses.map((course) => (
           <TouchableOpacity
-            key={course.id}
+            key={course.id.toString()}
             style={styles.courseCard}
-            onPress={() => router.push(`/course/${course.id}` as any)}
+            onPress={() => router.push(`/course/${course.id}`)}
             activeOpacity={0.7}>
             <View style={styles.courseHeader}>
+              {/* Course Thumbnail */}
+              <View style={styles.courseThumbnail}>
+                <Play size={24} color="#ffffff" />
+              </View>
+              
               <View style={styles.courseInfo}>
                 <Text style={styles.courseTitle}>{course.title}</Text>
                 <Text style={styles.courseDescription}>{course.description}</Text>
@@ -91,7 +144,7 @@ export default function CoursesScreen() {
                   </View>
                   <View style={styles.metaItem}>
                     <BookOpen size={16} color="#6b7280" />
-                    <Text style={styles.metaText}>{course.lessons} lessons</Text>
+                    <Text style={styles.metaText}>{course.lessons_count} lessons</Text>
                   </View>
                 </View>
               </View>
@@ -101,21 +154,21 @@ export default function CoursesScreen() {
                   <View style={styles.premiumBadge}>
                     <Lock size={16} color="#f59e0b" />
                   </View>
-                ) : course.completed ? (
+                ) : (course as any).completed ? (
                   <CheckCircle size={24} color="#10b981" />
                 ) : (
                   <View style={styles.progressCircle}>
-                    <Text style={styles.progressText}>{course.progress}%</Text>
+                    <Text style={styles.progressText}>{(course as any).progress || 0}%</Text>
                   </View>
                 )}
               </View>
             </View>
 
             {/* Progress Bar */}
-            {!course.premium || userSubscription === 'premium' ? (
+            {!course.is_premium || userSubscription === 'premium' ? (
               <View style={styles.progressBarContainer}>
                 <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: `${course.progress}%` }]} />
+                  <View style={[styles.progressFill, { width: `${(course as any).progress || 0}%` }]} />
                 </View>
               </View>
             ) : (
@@ -185,12 +238,20 @@ const styles = StyleSheet.create({
   },
   courseHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  courseThumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    backgroundColor: '#8b5cf6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   courseInfo: {
     flex: 1,
-    marginRight: 16,
   },
   courseTitle: {
     fontSize: 18,
@@ -218,6 +279,7 @@ const styles = StyleSheet.create({
   },
   courseStatus: {
     alignItems: 'center',
+    marginLeft: 16,
   },
   premiumBadge: {
     backgroundColor: '#fef3c7',

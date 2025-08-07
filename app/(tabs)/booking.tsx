@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Calendar, Clock, User, ArrowLeft, ExternalLink } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { Calendar, ExternalLink, User } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { BookingForm } from '@/types/database';
 
@@ -17,7 +16,33 @@ export default function BookingScreen() {
   const fetchBookingForms = async () => {
     try {
       if (!supabase) {
-        console.warn('Supabase not configured');
+        // Mock data when Supabase is not configured
+        setBookingForms([
+          {
+            id: '1',
+            coach_name: 'Rinesh Kumar',
+            form_url: 'https://forms.google.com/rinesh-booking',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: '2',
+            coach_name: 'Harsha Patel',
+            form_url: 'https://forms.google.com/harsha-booking',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: '3',
+            coach_name: 'Divyanshu Singh',
+            form_url: 'https://forms.google.com/divyanshu-booking',
+            is_active: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ]);
         return;
       }
 
@@ -48,9 +73,6 @@ export default function BookingScreen() {
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft size={24} color="#ffffff" />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Book a Coach</Text>
         <Text style={styles.headerSubtitle}>Schedule your 1-on-1 session</Text>
       </LinearGradient>
@@ -70,7 +92,7 @@ export default function BookingScreen() {
               activeOpacity={0.7}>
               <View style={styles.coachInfo}>
                 <View style={styles.coachAvatar}>
-                  <Text style={styles.avatarText}>{form.coach_name.charAt(0)}</Text>
+                  <User size={24} color="#ffffff" />
                 </View>
                 <View style={styles.coachDetails}>
                   <Text style={styles.coachName}>{form.coach_name}</Text>
@@ -108,6 +130,18 @@ export default function BookingScreen() {
             <Text style={styles.bookButtonText}>Open Booking Form</Text>
           </LinearGradient>
         </TouchableOpacity>
+
+        {/* Information Card */}
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>What to Expect</Text>
+          <Text style={styles.infoText}>
+            • 1-hour personalized coaching session{'\n'}
+            • Customized improvement strategies{'\n'}
+            • Action plan for your specific challenges{'\n'}
+            • Follow-up resources and tools{'\n'}
+            • Q&A with industry experts
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -124,9 +158,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
-  },
-  backButton: {
-    marginBottom: 16,
   },
   headerTitle: {
     fontSize: 28,
@@ -181,11 +212,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#ffffff',
-  },
   coachDetails: {
     flex: 1,
   },
@@ -199,11 +225,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginBottom: 4,
-  },
-  coachRating: {
-    fontSize: 12,
-    color: '#10b981',
-    fontWeight: '600',
   },
   formLinkRow: {
     flexDirection: 'row',
@@ -221,84 +242,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: '#10b981',
   },
-  topicsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  topicChip: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  selectedChip: {
-    backgroundColor: '#8b5cf6',
-    borderColor: '#8b5cf6',
-  },
-  topicText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-  selectedChipText: {
-    color: '#ffffff',
-  },
-  customTopicInput: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#1f2937',
-    marginTop: 12,
-    textAlignVertical: 'top',
-  },
-  timeSlotsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  timeSlot: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  selectedTimeSlot: {
-    backgroundColor: '#8b5cf6',
-    borderColor: '#8b5cf6',
-  },
-  timeText: {
-    fontSize: 14,
-    color: '#6b7280',
-    fontWeight: '600',
-  },
-  selectedTimeText: {
-    color: '#ffffff',
-  },
-  notesInput: {
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: '#1f2937',
-    textAlignVertical: 'top',
-  },
   bookButton: {
     borderRadius: 16,
     overflow: 'hidden',
-    marginTop: 16,
     marginBottom: 20,
   },
   bookButtonDisabled: {
@@ -315,5 +261,26 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#ffffff',
+  },
+  infoCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 12,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 22,
   },
 });

@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Chrome as Home, BookOpen, Video, Users, Settings } from 'lucide-react-native';
+import { Chrome as Home, BookOpen, Video, Users, Settings, FileText, Calendar } from 'lucide-react-native';
 
 export default function TabLayout() {
   return (
@@ -46,6 +46,24 @@ export default function TabLayout() {
           title: 'Videos',
           tabBarIcon: ({ size, color }) => (
             <Video size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="blog"
+        options={{
+          title: 'Blog',
+          tabBarIcon: ({ size, color }) => (
+            <FileText size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="booking"
+        options={{
+          title: 'Booking',
+          tabBarIcon: ({ size, color }) => (
+            <Calendar size={size} color={color} />
           ),
         }}
       />
