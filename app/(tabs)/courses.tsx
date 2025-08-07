@@ -5,6 +5,7 @@ import { BookOpen, Clock, CircleCheck as CheckCircle, Lock, Play } from 'lucide-
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Course } from '@/types/database';
+import { getLocalCourses } from '@/lib/localData';
 
 const mockCourses = [
   {
@@ -71,15 +72,9 @@ export default function CoursesScreen() {
   const fetchCourses = async () => {
     try {
       if (!supabase) {
-        // Use mock data when Supabase is not configured
-        setCourses(mockCourses.map(course => ({
-          ...course,
-          id: course.id.toString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          thumbnail_url: null,
-          order_index: course.id,
-        })));
+        // Use local data when Supabase is not configured
+        const localCourses = getLocalCourses();
+        setCourses(localCourses);
         setLoading(false);
         return;
       }
@@ -93,15 +88,9 @@ export default function CoursesScreen() {
       setCourses(data || []);
     } catch (error) {
       console.error('Error fetching courses:', error);
-      // Fallback to mock data
-      setCourses(mockCourses.map(course => ({
-        ...course,
-        id: course.id.toString(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        thumbnail_url: null,
-        order_index: course.id,
-      })));
+      // Fallback to local data
+      const localCourses = getLocalCourses();
+      setCourses(localCourses);
     } finally {
       setLoading(false);
     }

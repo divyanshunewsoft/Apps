@@ -5,6 +5,13 @@ import { Plus, CreditCard as Edit, Trash2, Search, ArrowLeft, Eye, EyeOff } from
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { BlogPost } from '@/types/database';
+import { 
+  getLocalBlogPosts, 
+  addLocalBlogPost, 
+  updateLocalBlogPost, 
+  deleteLocalBlogPost,
+  LocalBlogPost 
+} from '@/lib/localData';
 
 export default function AdminBlogScreen() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -28,38 +35,10 @@ export default function AdminBlogScreen() {
 
   const fetchPosts = async () => {
     try {
-      // Check if Supabase is configured
       if (!supabase) {
-        // Provide mock data when Supabase is not configured
-        const mockPosts: BlogPost[] = [
-          {
-            id: '1',
-            title: 'Getting Started with Lean Six Sigma',
-            content: 'Learn the fundamentals of Lean Six Sigma methodology and how it can transform your business processes.',
-            excerpt: 'An introduction to Lean Six Sigma principles and their practical applications.',
-            author: 'Divyanshu Singh',
-            is_published: true,
-            featured_image_url: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg',
-            tags: ['lean', 'six-sigma', 'process-improvement'],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            published_at: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            title: 'Advanced Process Optimization Techniques',
-            content: 'Explore advanced techniques for optimizing business processes using data-driven approaches.',
-            excerpt: 'Deep dive into sophisticated process optimization methodologies.',
-            author: 'Divyanshu Singh',
-            is_published: false,
-            featured_image_url: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg',
-            tags: ['optimization', 'data-analysis', 'efficiency'],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-            published_at: null,
-          },
-        ];
-        setPosts(mockPosts);
+        // Use local data when Supabase is not configured
+        const localPosts = getLocalBlogPosts();
+        setPosts(localPosts);
         setLoading(false);
         return;
       }
@@ -81,9 +60,31 @@ export default function AdminBlogScreen() {
 
   const handleSavePost = async () => {
     try {
-      // Check if Supabase is configured
       if (!supabase) {
-        Alert.alert('Error', 'Database not configured. Please set up Supabase to save posts.');
+        // Use local data when Supabase is not configured
+        const postData = {
+          title: formData.title,
+          content: formData.content,
+          excerpt: formData.excerpt,
+          author: formData.author,
+          is_published: formData.is_published,
+          featured_image_url: formData.featured_image_url,
+          tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+          published_at: formData.is_published ? new Date().toISOString() : undefined,
+        };
+
+        if (editingPost) {
+          updateLocalBlogPost(editingPost.id, postData);
+          Alert.alert('Success', 'Post updated successfully');
+        } else {
+          addLocalBlogPost(postData);
+          Alert.alert('Success', 'Post created successfully');
+        }
+        
+        setShowModal(false);
+        setEditingPost(null);
+        resetForm();
+        fetchPosts();
         return;
       }
 
@@ -132,7 +133,14 @@ export default function AdminBlogScreen() {
           onPress: async () => {
             try {
               if (!supabase) {
-                Alert.alert('Error', 'Database not configured. Please set up Supabase to delete posts.');
+                // Use local data when Supabase is not configured
+                const success = deleteLocalBlogPost(postId);
+                if (success) {
+                  Alert.alert('Success', 'Post deleted successfully');
+                  fetchPosts();
+                } else {
+                  Alert.alert('Error', 'Post not found');
+                }
                 return;
               }
 
@@ -157,7 +165,12 @@ export default function AdminBlogScreen() {
   const togglePublishStatus = async (post: BlogPost) => {
     try {
       if (!supabase) {
-        Alert.alert('Error', 'Database not configured. Please set up Supabase to update posts.');
+        // Use local data when Supabase is not configured
+        updateLocalBlogPost(post.id, { 
+          is_published: !post.is_published,
+          published_at: !post.is_published ? new Date().toISOString() : undefined
+        });
+        fetchPosts();
         return;
       }
 

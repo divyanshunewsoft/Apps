@@ -5,6 +5,7 @@ import { ArrowLeft, Play, Lock, CircleCheck as CheckCircle, Clock } from 'lucide
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Course, CourseVideo } from '@/types/database';
+import { getLocalCourses, getLocalCourseVideos } from '@/lib/localData';
 
 const { width } = Dimensions.get('window');
 
@@ -145,18 +146,33 @@ export default function CourseDetailScreen() {
   const fetchCourseDetails = async () => {
     try {
       if (!supabase) {
-        // Use mock data when Supabase is not configured
-        const mockCourse = mockCourses[id as keyof typeof mockCourses];
-        const mockCourseVideos = mockVideos[id as keyof typeof mockVideos] || [];
+        // Use local data when Supabase is not configured
+        const localCourses = getLocalCourses();
+        const localCourse = localCourses.find(c => c.id === id);
+        const localVideos = getLocalCourseVideos(id as string);
         
-        if (mockCourse) {
-          setCourse(mockCourse);
-          setVideos(mockCourseVideos);
+        if (localCourse) {
+          setCourse(localCourse);
+          setVideos(localVideos);
           
           // Auto-select first video or first preview video
-          const firstVideo = mockCourseVideos.find(v => v.is_preview) || mockCourseVideos[0];
+          const firstVideo = localVideos.find(v => v.is_preview) || localVideos[0];
           if (firstVideo) {
             setSelectedVideo(firstVideo);
+          }
+        } else {
+          // Fallback to mock data if course not found in local data
+          const mockCourse = mockCourses[id as keyof typeof mockCourses];
+          const mockCourseVideos = mockVideos[id as keyof typeof mockVideos] || [];
+          
+          if (mockCourse) {
+            setCourse(mockCourse);
+            setVideos(mockCourseVideos);
+            
+            const firstVideo = mockCourseVideos.find(v => v.is_preview) || mockCourseVideos[0];
+            if (firstVideo) {
+              setSelectedVideo(firstVideo);
+            }
           }
         }
         setLoading(false);

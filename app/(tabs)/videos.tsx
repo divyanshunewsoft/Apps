@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Play, Clock, Users, Star } from 'lucide-react-native';
+import { getLocalVideos } from '@/lib/localData';
 
 const videoCategories = [
   { id: 'all', title: 'All Videos', active: true },
@@ -11,54 +12,31 @@ const videoCategories = [
 ];
 
 const videos = [
-  {
-    id: 1,
-    title: 'Introduction to Lean Methodology',
-    category: 'courses',
-    duration: '15:30',
-    views: '2.3k',
-    rating: 4.8,
-    youtubeId: 'dQw4w9WgXcQ',
-    thumbnail: 'https://images.pexels.com/photos/3184298/pexels-photo-3184298.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-  {
-    id: 2,
-    title: 'Client Success Story - Manufacturing',
-    category: 'testimonials',
-    duration: '8:45',
-    views: '1.8k',
-    rating: 4.9,
-    youtubeId: 'dQw4w9WgXcQ',
-    thumbnail: 'https://images.pexels.com/photos/3184416/pexels-photo-3184416.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-  {
-    id: 3,
-    title: 'Daily Motivation - Mystic Myra Speaks',
-    category: 'inspiration',
-    duration: '5:20',
-    views: '3.1k',
-    rating: 4.7,
-    youtubeId: 'dQw4w9WgXcQ',
-    thumbnail: 'https://images.pexels.com/photos/3760263/pexels-photo-3760263.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
-  {
-    id: 4,
-    title: 'DMAIC Process Explained',
-    category: 'courses',
-    duration: '22:15',
-    views: '1.5k',
-    rating: 4.6,
-    youtubeId: 'dQw4w9WgXcQ',
-    thumbnail: 'https://images.pexels.com/photos/3184339/pexels-photo-3184339.jpeg?auto=compress&cs=tinysrgb&w=800',
-  },
 ];
 
 export default function VideosScreen() {
   const [activeCategory, setActiveCategory] = useState('all');
+  const [videoList, setVideoList] = useState(videos);
+
+  useEffect(() => {
+    // Load videos from local data
+    const localVideos = getLocalVideos();
+    const formattedVideos = localVideos.map(video => ({
+      id: parseInt(video.id),
+      title: video.title,
+      category: video.category,
+      duration: video.duration,
+      views: `${(video.views_count / 1000).toFixed(1)}k`,
+      rating: video.rating,
+      youtubeId: video.youtube_id,
+      thumbnail: video.thumbnail_url || 'https://images.pexels.com/photos/3184298/pexels-photo-3184298.jpeg?auto=compress&cs=tinysrgb&w=800',
+    }));
+    setVideoList(formattedVideos);
+  }, []);
 
   const filteredVideos = activeCategory === 'all' 
-    ? videos 
-    : videos.filter(video => video.category === activeCategory);
+    ? videoList 
+    : videoList.filter(video => video.category === activeCategory);
 
   const openVideo = (youtubeId: string) => {
     const url = `https://www.youtube.com/watch?v=${youtubeId}`;

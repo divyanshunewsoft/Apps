@@ -5,6 +5,18 @@ import { Plus, CreditCard as Edit, Trash2, Search, DollarSign, Users, ArrowLeft,
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Course, CourseVideo } from '@/types/database';
+import { 
+  getLocalCourses, 
+  addLocalCourse, 
+  updateLocalCourse, 
+  deleteLocalCourse,
+  getLocalCourseVideos,
+  addLocalCourseVideo,
+  updateLocalCourseVideo,
+  deleteLocalCourseVideo,
+  LocalCourse,
+  LocalCourseVideo 
+} from '@/lib/localData';
 
 export default function AdminCoursesScreen() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -42,36 +54,10 @@ export default function AdminCoursesScreen() {
 
   const fetchCourses = async () => {
     try {
-      // Check if Supabase is configured
       if (!supabase) {
-        // Provide mock data when Supabase is not configured
-        const mockCourses: Course[] = [
-          {
-            id: '1',
-            title: 'Lean Six Sigma Green Belt',
-            description: 'Comprehensive training for Lean Six Sigma Green Belt certification',
-            duration: '8 weeks',
-            lessons_count: 24,
-            is_premium: true,
-            thumbnail_url: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg',
-            order_index: 1,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            title: 'Process Improvement Fundamentals',
-            description: 'Learn the basics of process improvement and optimization',
-            duration: '4 weeks',
-            lessons_count: 12,
-            is_premium: false,
-            thumbnail_url: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg',
-            order_index: 2,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ];
-        setCourses(mockCourses);
+        // Use local data when Supabase is not configured
+        const localCourses = getLocalCourses();
+        setCourses(localCourses);
         setLoading(false);
         return;
       }
@@ -94,7 +80,19 @@ export default function AdminCoursesScreen() {
   const handleSaveCourse = async () => {
     try {
       if (!supabase) {
-        Alert.alert('Error', 'Database not configured. Please set up Supabase to save courses.');
+        // Use local data when Supabase is not configured
+        if (editingCourse) {
+          updateLocalCourse(editingCourse.id, formData);
+          Alert.alert('Success', 'Course updated successfully');
+        } else {
+          addLocalCourse(formData);
+          Alert.alert('Success', 'Course created successfully');
+        }
+        
+        setShowModal(false);
+        setEditingCourse(null);
+        resetForm();
+        fetchCourses();
         return;
       }
 
@@ -128,22 +126,9 @@ export default function AdminCoursesScreen() {
   const fetchCourseVideos = async (courseId: string) => {
     try {
       if (!supabase) {
-        // Provide mock data when Supabase is not configured
-        const mockVideos: CourseVideo[] = [
-          {
-            id: '1',
-            course_id: courseId,
-            title: 'Introduction to Lean Principles',
-            description: 'Overview of core Lean methodology concepts',
-            video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
-            duration: '15:30',
-            order_index: 1,
-            is_preview: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ];
-        setCourseVideos(mockVideos);
+        // Use local data when Supabase is not configured
+        const localVideos = getLocalCourseVideos(courseId);
+        setCourseVideos(localVideos);
         return;
       }
 
@@ -165,7 +150,25 @@ export default function AdminCoursesScreen() {
 
     try {
       if (!supabase) {
-        Alert.alert('Error', 'Database not configured. Please set up Supabase to save videos.');
+        // Use local data when Supabase is not configured
+        const videoData = {
+          ...videoFormData,
+          course_id: selectedCourse.id,
+          order_index: courseVideos.length,
+        };
+
+        if (editingVideo) {
+          updateLocalCourseVideo(editingVideo.id, videoData);
+          Alert.alert('Success', 'Video updated successfully');
+        } else {
+          addLocalCourseVideo(videoData);
+          Alert.alert('Success', 'Video added successfully');
+        }
+        
+        setShowVideoModal(false);
+        setEditingVideo(null);
+        resetVideoForm();
+        fetchCourseVideos(selectedCourse.id);
         return;
       }
 
@@ -214,7 +217,16 @@ export default function AdminCoursesScreen() {
           onPress: async () => {
             try {
               if (!supabase) {
-                Alert.alert('Error', 'Database not configured. Please set up Supabase to delete videos.');
+                // Use local data when Supabase is not configured
+                const success = deleteLocalCourseVideo(videoId);
+                if (success) {
+                  Alert.alert('Success', 'Video deleted successfully');
+                  if (selectedCourse) {
+                    fetchCourseVideos(selectedCourse.id);
+                  }
+                } else {
+                  Alert.alert('Error', 'Video not found');
+                }
                 return;
               }
 
@@ -250,7 +262,14 @@ export default function AdminCoursesScreen() {
           onPress: async () => {
             try {
               if (!supabase) {
-                Alert.alert('Error', 'Database not configured. Please set up Supabase to delete courses.');
+                // Use local data when Supabase is not configured
+                const success = deleteLocalCourse(courseId);
+                if (success) {
+                  Alert.alert('Success', 'Course deleted successfully');
+                  fetchCourses();
+                } else {
+                  Alert.alert('Error', 'Course not found');
+                }
                 return;
               }
 
