@@ -28,6 +28,42 @@ export default function AdminBlogScreen() {
 
   const fetchPosts = async () => {
     try {
+      // Check if Supabase is configured
+      if (!supabase) {
+        // Provide mock data when Supabase is not configured
+        const mockPosts: BlogPost[] = [
+          {
+            id: '1',
+            title: 'Getting Started with Lean Six Sigma',
+            content: 'Learn the fundamentals of Lean Six Sigma methodology and how it can transform your business processes.',
+            excerpt: 'An introduction to Lean Six Sigma principles and their practical applications.',
+            author: 'Divyanshu Singh',
+            is_published: true,
+            featured_image_url: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg',
+            tags: ['lean', 'six-sigma', 'process-improvement'],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            published_at: new Date().toISOString(),
+          },
+          {
+            id: '2',
+            title: 'Advanced Process Optimization Techniques',
+            content: 'Explore advanced techniques for optimizing business processes using data-driven approaches.',
+            excerpt: 'Deep dive into sophisticated process optimization methodologies.',
+            author: 'Divyanshu Singh',
+            is_published: false,
+            featured_image_url: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg',
+            tags: ['optimization', 'data-analysis', 'efficiency'],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            published_at: null,
+          },
+        ];
+        setPosts(mockPosts);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
