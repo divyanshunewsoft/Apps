@@ -81,6 +81,12 @@ export default function AdminBlogScreen() {
 
   const handleSavePost = async () => {
     try {
+      // Check if Supabase is configured
+      if (!supabase) {
+        Alert.alert('Error', 'Database not configured. Please set up Supabase to save posts.');
+        return;
+      }
+
       const postData = {
         ...formData,
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
@@ -125,6 +131,11 @@ export default function AdminBlogScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              if (!supabase) {
+                Alert.alert('Error', 'Database not configured. Please set up Supabase to delete posts.');
+                return;
+              }
+
               const { error } = await supabase
                 .from('blog_posts')
                 .delete()
@@ -145,6 +156,11 @@ export default function AdminBlogScreen() {
 
   const togglePublishStatus = async (post: BlogPost) => {
     try {
+      if (!supabase) {
+        Alert.alert('Error', 'Database not configured. Please set up Supabase to update posts.');
+        return;
+      }
+
       const { error } = await supabase
         .from('blog_posts')
         .update({ 

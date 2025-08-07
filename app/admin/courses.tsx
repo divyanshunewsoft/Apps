@@ -42,6 +42,40 @@ export default function AdminCoursesScreen() {
 
   const fetchCourses = async () => {
     try {
+      // Check if Supabase is configured
+      if (!supabase) {
+        // Provide mock data when Supabase is not configured
+        const mockCourses: Course[] = [
+          {
+            id: '1',
+            title: 'Lean Six Sigma Green Belt',
+            description: 'Comprehensive training for Lean Six Sigma Green Belt certification',
+            duration: '8 weeks',
+            lessons_count: 24,
+            is_premium: true,
+            thumbnail_url: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg',
+            order_index: 1,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: '2',
+            title: 'Process Improvement Fundamentals',
+            description: 'Learn the basics of process improvement and optimization',
+            duration: '4 weeks',
+            lessons_count: 12,
+            is_premium: false,
+            thumbnail_url: 'https://images.pexels.com/photos/3184338/pexels-photo-3184338.jpeg',
+            order_index: 2,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ];
+        setCourses(mockCourses);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('courses')
         .select('*')
@@ -59,6 +93,11 @@ export default function AdminCoursesScreen() {
 
   const handleSaveCourse = async () => {
     try {
+      if (!supabase) {
+        Alert.alert('Error', 'Database not configured. Please set up Supabase to save courses.');
+        return;
+      }
+
       if (editingCourse) {
         const { error } = await supabase
           .from('courses')
@@ -88,6 +127,26 @@ export default function AdminCoursesScreen() {
 
   const fetchCourseVideos = async (courseId: string) => {
     try {
+      if (!supabase) {
+        // Provide mock data when Supabase is not configured
+        const mockVideos: CourseVideo[] = [
+          {
+            id: '1',
+            course_id: courseId,
+            title: 'Introduction to Lean Principles',
+            description: 'Overview of core Lean methodology concepts',
+            video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            duration: '15:30',
+            order_index: 1,
+            is_preview: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ];
+        setCourseVideos(mockVideos);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('course_videos')
         .select('*')
@@ -105,6 +164,11 @@ export default function AdminCoursesScreen() {
     if (!selectedCourse) return;
 
     try {
+      if (!supabase) {
+        Alert.alert('Error', 'Database not configured. Please set up Supabase to save videos.');
+        return;
+      }
+
       const videoData = {
         ...videoFormData,
         course_id: selectedCourse.id,
@@ -149,6 +213,11 @@ export default function AdminCoursesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              if (!supabase) {
+                Alert.alert('Error', 'Database not configured. Please set up Supabase to delete videos.');
+                return;
+              }
+
               const { error } = await supabase
                 .from('course_videos')
                 .delete()
@@ -180,6 +249,11 @@ export default function AdminCoursesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              if (!supabase) {
+                Alert.alert('Error', 'Database not configured. Please set up Supabase to delete courses.');
+                return;
+              }
+
               const { error } = await supabase
                 .from('courses')
                 .delete()
