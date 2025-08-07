@@ -1,14 +1,133 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Play, Lock, CircleCheck as CheckCircle, Clock } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Course, CourseVideo } from '@/types/database';
-import { WebView } from 'react-native-webview';
 
 const { width } = Dimensions.get('window');
 
+// Mock data for when Supabase is not configured
+const mockCourses = {
+  '1': {
+    id: '1',
+    title: 'Lean Basics',
+    description: 'Master the fundamental principles of Lean methodology. This comprehensive course covers waste elimination, value stream mapping, and continuous improvement techniques that form the foundation of Lean thinking.',
+    duration: '2 hours',
+    lessons_count: 8,
+    is_premium: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    thumbnail_url: null,
+    order_index: 1,
+  },
+  '2': {
+    id: '2',
+    title: 'Six Sigma Belt Overview',
+    description: 'Understand the Six Sigma belt system and methodology. Learn about DMAIC process, statistical tools, and how to drive quality improvements in your organization.',
+    duration: '3 hours',
+    lessons_count: 12,
+    is_premium: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    thumbnail_url: null,
+    order_index: 2,
+  },
+  '3': {
+    id: '3',
+    title: 'DMAIC Process',
+    description: 'Deep dive into the Define, Measure, Analyze, Improve, Control methodology. Learn advanced techniques for process improvement and problem-solving.',
+    duration: '4 hours',
+    lessons_count: 16,
+    is_premium: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    thumbnail_url: null,
+    order_index: 3,
+  },
+};
+
+const mockVideos = {
+  '1': [
+    {
+      id: '1',
+      course_id: '1',
+      title: 'Introduction to Lean Thinking',
+      description: 'Overview of Lean principles and philosophy',
+      video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      duration: '12:30',
+      order_index: 0,
+      is_preview: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: '2',
+      course_id: '1',
+      title: 'Identifying Waste in Processes',
+      description: 'Learn to spot the 8 types of waste in any process',
+      video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      duration: '15:45',
+      order_index: 1,
+      is_preview: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: '3',
+      course_id: '1',
+      title: 'Value Stream Mapping',
+      description: 'Create effective value stream maps',
+      video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      duration: '18:20',
+      order_index: 2,
+      is_preview: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ],
+  '2': [
+    {
+      id: '4',
+      course_id: '2',
+      title: 'Six Sigma Overview',
+      description: 'Introduction to Six Sigma methodology',
+      video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      duration: '14:15',
+      order_index: 0,
+      is_preview: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    {
+      id: '5',
+      course_id: '2',
+      title: 'Belt System Explained',
+      description: 'Understanding White, Yellow, Green, Black belts',
+      video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      duration: '16:40',
+      order_index: 1,
+      is_preview: false,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ],
+  '3': [
+    {
+      id: '6',
+      course_id: '3',
+      title: 'DMAIC Introduction',
+      description: 'Overview of the DMAIC process',
+      video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+      duration: '10:30',
+      order_index: 0,
+      is_preview: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ],
+};
 export default function CourseDetailScreen() {
   const { id } = useLocalSearchParams();
   const [course, setCourse] = useState<Course | null>(null);
@@ -25,13 +144,49 @@ export default function CourseDetailScreen() {
 
   const fetchCourseDetails = async () => {
     try {
+      if (!supabase) {
+        // Use mock data when Supabase is not configured
+        const mockCourse = mockCourses[id as keyof typeof mockCourses];
+        const mockCourseVideos = mockVideos[id as keyof typeof mockVideos] || [];
+        
+        if (mockCourse) {
+          setCourse(mockCourse);
+          setVideos(mockCourseVideos);
+          
+          // Auto-select first video or first preview video
+          const firstVideo = mockCourseVideos.find(v => v.is_preview) || mockCourseVideos[0];
+          if (firstVideo) {
+            setSelectedVideo(firstVideo);
+          }
+        }
+        setLoading(false);
+        return;
+      }
+
       const { data: courseData, error: courseError } = await supabase
         .from('courses')
         .select('*')
         .eq('id', id)
         .single();
 
-      if (courseError) throw courseError;
+      if (courseError) {
+        // Fallback to mock data
+        const mockCourse = mockCourses[id as keyof typeof mockCourses];
+        const mockCourseVideos = mockVideos[id as keyof typeof mockVideos] || [];
+        
+        if (mockCourse) {
+          setCourse(mockCourse);
+          setVideos(mockCourseVideos);
+          
+          const firstVideo = mockCourseVideos.find(v => v.is_preview) || mockCourseVideos[0];
+          if (firstVideo) {
+            setSelectedVideo(firstVideo);
+          }
+        }
+        setLoading(false);
+        return;
+      }
+      
       setCourse(courseData);
 
       const { data: videosData, error: videosError } = await supabase
@@ -40,7 +195,19 @@ export default function CourseDetailScreen() {
         .eq('course_id', id)
         .order('order_index');
 
-      if (videosError) throw videosError;
+      if (videosError) {
+        // Fallback to mock videos
+        const mockCourseVideos = mockVideos[id as keyof typeof mockVideos] || [];
+        setVideos(mockCourseVideos);
+        
+        const firstVideo = mockCourseVideos.find(v => v.is_preview) || mockCourseVideos[0];
+        if (firstVideo) {
+          setSelectedVideo(firstVideo);
+        }
+        setLoading(false);
+        return;
+      }
+      
       setVideos(videosData || []);
       
       // Auto-select first video or first preview video
@@ -56,22 +223,20 @@ export default function CourseDetailScreen() {
   };
 
   const canAccessVideo = (video: CourseVideo) => {
-    return video.is_preview || userSubscription === 'premium' || !course?.is_premium;
+    return video.is_preview || userSubscription === 'premium' || !(course?.is_premium);
   };
 
-  const getEmbedUrl = (url: string) => {
-    // Convert various video URLs to embed format
-    if (url.includes('youtube.com/watch')) {
-      const videoId = url.split('v=')[1]?.split('&')[0];
-      return `https://www.youtube.com/embed/${videoId}`;
-    } else if (url.includes('youtu.be/')) {
-      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
-      return `https://www.youtube.com/embed/${videoId}`;
-    } else if (url.includes('vimeo.com/')) {
-      const videoId = url.split('vimeo.com/')[1]?.split('?')[0];
-      return `https://player.vimeo.com/video/${videoId}`;
+  const openVideo = (video: CourseVideo) => {
+    if (!canAccessVideo(video)) return;
+    
+    // Convert embed URL to watch URL for external opening
+    let watchUrl = video.video_url;
+    if (video.video_url.includes('youtube.com/embed/')) {
+      const videoId = video.video_url.split('/embed/')[1]?.split('?')[0];
+      watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
     }
-    return url; // Assume it's already an embed URL
+    
+    Linking.openURL(watchUrl);
   };
 
   if (loading || !course) {
@@ -100,18 +265,23 @@ export default function CourseDetailScreen() {
       <View style={styles.content}>
         {/* Video Player */}
         {selectedVideo && canAccessVideo(selectedVideo) && (
-          <View style={styles.videoContainer}>
-            <WebView
-              source={{ uri: getEmbedUrl(selectedVideo.video_url) }}
-              style={styles.webView}
-              allowsFullscreenVideo
-              mediaPlaybackRequiresUserAction={false}
-            />
+          <TouchableOpacity 
+            style={styles.videoContainer}
+            onPress={() => openVideo(selectedVideo)}
+            activeOpacity={0.8}>
+            <View style={styles.videoThumbnail}>
+              <View style={styles.playButton}>
+                <Play size={32} color="#ffffff" fill="#ffffff" />
+              </View>
+              <View style={styles.videoDuration}>
+                <Text style={styles.videoDurationText}>{selectedVideo.duration}</Text>
+              </View>
+            </View>
             <View style={styles.videoInfo}>
               <Text style={styles.videoTitle}>{selectedVideo.title}</Text>
               <Text style={styles.videoDescription}>{selectedVideo.description}</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
 
         {/* Course Description */}
@@ -132,7 +302,11 @@ export default function CourseDetailScreen() {
                   selectedVideo?.id === video.id && styles.selectedVideoItem,
                   !canAccessVideo(video) && styles.lockedVideoItem
                 ]}
-                onPress={() => canAccessVideo(video) && setSelectedVideo(video)}
+                onPress={() => {
+                  if (canAccessVideo(video)) {
+                    setSelectedVideo(video);
+                  }
+                }}
                 activeOpacity={0.7}>
                 <View style={styles.videoItemContent}>
                   <View style={styles.videoItemLeft}>
@@ -159,7 +333,9 @@ export default function CourseDetailScreen() {
                   </View>
                   <View style={styles.videoItemRight}>
                     {canAccessVideo(video) ? (
-                      <Play size={20} color="#8b5cf6" />
+                      <TouchableOpacity onPress={() => openVideo(video)}>
+                        <Play size={20} color="#8b5cf6" />
+                      </TouchableOpacity>
                     ) : (
                       <Lock size={20} color="#9ca3af" />
                     )}
@@ -230,7 +406,6 @@ const styles = StyleSheet.create({
   videoContainer: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    overflow: 'hidden',
     marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -238,8 +413,36 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  webView: {
+  videoThumbnail: {
     height: 200,
+    backgroundColor: '#8b5cf6',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  playButton: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoDuration: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  videoDurationText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
   videoInfo: {
     padding: 16,
