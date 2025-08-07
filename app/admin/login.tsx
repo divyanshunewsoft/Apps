@@ -17,7 +17,12 @@ export default function AdminLoginScreen() {
     
     try {
       if (!supabase) {
-        Alert.alert('Configuration Error', 'Please connect to Supabase to use admin features.');
+        // For demo purposes, allow hardcoded admin access when Supabase is not configured
+        if (username.trim() === 'Divyanshu' && password === 'admin123') {
+          router.replace('/admin/dashboard');
+          return;
+        }
+        Alert.alert('Access Denied', 'Invalid credentials. Admin access only.');
         setLoading(false);
         return;
       }
@@ -30,6 +35,11 @@ export default function AdminLoginScreen() {
         .single();
 
       if (error || !adminUser) {
+        // Fallback to hardcoded credentials if database lookup fails
+        if (username.trim() === 'Divyanshu' && password === 'admin123') {
+          router.replace('/admin/dashboard');
+          return;
+        }
         Alert.alert('Access Denied', 'Invalid credentials. Admin access only.');
         setLoading(false);
         return;
@@ -50,6 +60,11 @@ export default function AdminLoginScreen() {
       }
     } catch (error) {
       console.error('Login error:', error);
+      // Fallback to hardcoded credentials on any error
+      if (username.trim() === 'Divyanshu' && password === 'admin123') {
+        router.replace('/admin/dashboard');
+        return;
+      }
       Alert.alert('Error', 'Login failed. Please try again.');
     } finally {
       setLoading(false);
