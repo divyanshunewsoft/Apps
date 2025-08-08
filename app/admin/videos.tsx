@@ -10,7 +10,8 @@ import {
   addLocalVideo, 
   updateLocalVideo, 
   deleteLocalVideo,
-  LocalVideo 
+  LocalVideo,
+  refreshLocalData
 } from '@/lib/localData';
 
 const categories = ['courses', 'testimonials', 'inspiration'] as const;
@@ -93,6 +94,7 @@ export default function AdminVideosScreen() {
         setShowModal(false);
         setEditingVideo(null);
         resetForm();
+        refreshLocalData(); // Notify other components to refresh
         fetchVideos();
         return;
       }
@@ -145,6 +147,7 @@ export default function AdminVideosScreen() {
                 const success = deleteLocalVideo(videoId);
                 if (success) {
                   Alert.alert('Success', 'Video deleted successfully');
+                  refreshLocalData(); // Notify other components to refresh
                   fetchVideos();
                 } else {
                   Alert.alert('Error', 'Video not found');

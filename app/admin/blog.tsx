@@ -10,7 +10,8 @@ import {
   addLocalBlogPost, 
   updateLocalBlogPost, 
   deleteLocalBlogPost,
-  LocalBlogPost 
+  LocalBlogPost,
+  refreshLocalData
 } from '@/lib/localData';
 
 export default function AdminBlogScreen() {
@@ -84,6 +85,7 @@ export default function AdminBlogScreen() {
         setShowModal(false);
         setEditingPost(null);
         resetForm();
+        refreshLocalData(); // Notify other components to refresh
         fetchPosts();
         return;
       }
@@ -137,6 +139,7 @@ export default function AdminBlogScreen() {
                 const success = deleteLocalBlogPost(postId);
                 if (success) {
                   Alert.alert('Success', 'Post deleted successfully');
+                  refreshLocalData(); // Notify other components to refresh
                   fetchPosts();
                 } else {
                   Alert.alert('Error', 'Post not found');
@@ -170,6 +173,7 @@ export default function AdminBlogScreen() {
           is_published: !post.is_published,
           published_at: !post.is_published ? new Date().toISOString() : undefined
         });
+        refreshLocalData(); // Notify other components to refresh
         fetchPosts();
         return;
       }

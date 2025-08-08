@@ -5,7 +5,7 @@ import { ArrowLeft, Play, Lock, CircleCheck as CheckCircle, Clock } from 'lucide
 import { router, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Course, CourseVideo } from '@/types/database';
-import { getLocalCourses, getLocalCourseVideos } from '@/lib/localData';
+import { getLocalCourses, getLocalCourseVideos, subscribeToDataChanges } from '@/lib/localData';
 
 const { width } = Dimensions.get('window');
 
@@ -140,6 +140,13 @@ export default function CourseDetailScreen() {
   useEffect(() => {
     if (id) {
       fetchCourseDetails();
+      
+      // Subscribe to data changes for real-time updates
+      const unsubscribe = subscribeToDataChanges(() => {
+        fetchCourseDetails();
+      });
+      
+      return unsubscribe;
     }
   }, [id]);
 

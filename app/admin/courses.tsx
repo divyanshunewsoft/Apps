@@ -15,7 +15,8 @@ import {
   updateLocalCourseVideo,
   deleteLocalCourseVideo,
   LocalCourse,
-  LocalCourseVideo 
+  LocalCourseVideo,
+  refreshLocalData
 } from '@/lib/localData';
 
 export default function AdminCoursesScreen() {
@@ -92,6 +93,7 @@ export default function AdminCoursesScreen() {
         setShowModal(false);
         setEditingCourse(null);
         resetForm();
+        refreshLocalData(); // Notify other components to refresh
         fetchCourses();
         return;
       }
@@ -168,6 +170,7 @@ export default function AdminCoursesScreen() {
         setShowVideoModal(false);
         setEditingVideo(null);
         resetVideoForm();
+        refreshLocalData(); // Notify other components to refresh
         fetchCourseVideos(selectedCourse.id);
         return;
       }
@@ -221,6 +224,7 @@ export default function AdminCoursesScreen() {
                 const success = deleteLocalCourseVideo(videoId);
                 if (success) {
                   Alert.alert('Success', 'Video deleted successfully');
+                  refreshLocalData(); // Notify other components to refresh
                   if (selectedCourse) {
                     fetchCourseVideos(selectedCourse.id);
                   }
@@ -266,6 +270,7 @@ export default function AdminCoursesScreen() {
                 const success = deleteLocalCourse(courseId);
                 if (success) {
                   Alert.alert('Success', 'Course deleted successfully');
+                  refreshLocalData(); // Notify other components to refresh
                   fetchCourses();
                 } else {
                   Alert.alert('Error', 'Course not found');

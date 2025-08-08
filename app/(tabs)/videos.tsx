@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Play, Clock, Users, Star } from 'lucide-react-native';
-import { getLocalVideos } from '@/lib/localData';
+import { getLocalVideos, subscribeToDataChanges } from '@/lib/localData';
 
 const videoCategories = [
   { id: 'all', title: 'All Videos', active: true },
@@ -19,6 +20,17 @@ export default function VideosScreen() {
   const [videoList, setVideoList] = useState(videos);
 
   useEffect(() => {
+    loadVideos();
+    
+    // Subscribe to data changes for real-time updates
+    const unsubscribe = subscribeToDataChanges(() => {
+      loadVideos();
+    });
+    
+    return unsubscribe;
+  }, []);
+
+  const loadVideos = () => {
     // Load videos from local data
     const localVideos = getLocalVideos();
     const formattedVideos = localVideos.map(video => ({
@@ -32,7 +44,7 @@ export default function VideosScreen() {
       thumbnail: video.thumbnail_url || 'https://images.pexels.com/photos/3184298/pexels-photo-3184298.jpeg?auto=compress&cs=tinysrgb&w=800',
     }));
     setVideoList(formattedVideos);
-  }, []);
+  };
 
   const filteredVideos = activeCategory === 'all' 
     ? videoList 

@@ -5,7 +5,7 @@ import { BookOpen, Clock, CircleCheck as CheckCircle, Lock, Play } from 'lucide-
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Course } from '@/types/database';
-import { getLocalCourses } from '@/lib/localData';
+import { getLocalCourses, subscribeToDataChanges } from '@/lib/localData';
 
 const mockCourses = [
   {
@@ -67,6 +67,13 @@ export default function CoursesScreen() {
 
   useEffect(() => {
     fetchCourses();
+    
+    // Subscribe to data changes for real-time updates
+    const unsubscribe = subscribeToDataChanges(() => {
+      fetchCourses();
+    });
+    
+    return unsubscribe;
   }, []);
 
   const fetchCourses = async () => {

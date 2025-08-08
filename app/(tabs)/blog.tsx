@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Search, Calendar, User, Tag } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { BlogPost } from '@/types/database';
-import { getLocalBlogPosts } from '@/lib/localData';
+import { getLocalBlogPosts, subscribeToDataChanges } from '@/lib/localData';
 
 export default function BlogScreen() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -13,6 +13,13 @@ export default function BlogScreen() {
 
   useEffect(() => {
     fetchPosts();
+    
+    // Subscribe to data changes for real-time updates
+    const unsubscribe = subscribeToDataChanges(() => {
+      fetchPosts();
+    });
+    
+    return unsubscribe;
   }, []);
 
   const fetchPosts = async () => {
