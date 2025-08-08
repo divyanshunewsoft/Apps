@@ -15,7 +15,7 @@ export const subscribeToDataChanges = (listener: DataChangeListener) => {
   };
 };
 
-const refreshLocalData = () => {
+export const refreshLocalData = () => {
   dataChangeListeners.forEach(listener => listener());
 };
 
@@ -23,6 +23,10 @@ const refreshLocalData = () => {
 export const getLocalBlogPosts = () => localBlogPosts;
 
 export const addLocalBlogPost = (post: any) => {
+  // Ensure the post has a unique ID
+  if (!post.id) {
+    post.id = crypto.randomUUID();
+  }
   localBlogPosts.push(post);
   refreshLocalData();
 };
