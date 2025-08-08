@@ -88,7 +88,6 @@ export default function BlogScreen() {
                     <Text style={styles.imageText}>📰</Text>
                   </View>
                 </View>
-              )}
               <View style={styles.postContent}>
                 <Text style={styles.postTitle}>{post.title}</Text>
                 <Text style={styles.postExcerpt} numberOfLines={3}>
