@@ -54,6 +54,10 @@ export const deleteLocalBlogPost = (id: string) => {
 export const getLocalCourses = () => localCourses;
 
 export const addLocalCourse = (course: any) => {
+  // Ensure the course has a unique ID
+  if (!course.id) {
+    course.id = crypto.randomUUID();
+  }
   localCourses.push(course);
   refreshLocalData();
 };
@@ -81,6 +85,10 @@ export const deleteLocalCourse = (id: string) => {
 export const getLocalCourseVideos = () => localCourseVideos;
 
 export const addLocalCourseVideo = (video: any) => {
+  // Ensure the course video has a unique ID
+  if (!video.id) {
+    video.id = crypto.randomUUID();
+  }
   localCourseVideos.push(video);
   refreshLocalData();
 };
@@ -108,6 +116,10 @@ export const deleteLocalCourseVideo = (id: string) => {
 export const getLocalVideos = () => localVideos;
 
 export const addLocalVideo = (video: any) => {
+  // Ensure the video has a unique ID
+  if (!video.id) {
+    video.id = crypto.randomUUID();
+  }
   localVideos.push(video);
   refreshLocalData();
 };
