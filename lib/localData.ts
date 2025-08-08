@@ -82,7 +82,12 @@ export const deleteLocalCourse = (id: string) => {
 };
 
 // Course Videos
-export const getLocalCourseVideos = () => localCourseVideos;
+export const getLocalCourseVideos = (courseId?: string) => {
+  if (courseId) {
+    return localCourseVideos.filter(video => video.course_id === courseId);
+  }
+  return localCourseVideos;
+};
 
 export const addLocalCourseVideo = (video: any) => {
   // Ensure the course video has a unique ID
