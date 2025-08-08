@@ -5,6 +5,13 @@ import { Plus, CreditCard as Edit, Trash2, Search, ArrowLeft, Eye, EyeOff } from
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { BlogPost } from '@/types/database';
+import { 
+  getLocalBlogPosts, 
+  addLocalBlogPost, 
+  updateLocalBlogPost, 
+  deleteLocalBlogPost,
+  LocalBlogPost 
+} from '@/lib/localData';
 
 export default function AdminBlogScreen() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -28,6 +35,14 @@ export default function AdminBlogScreen() {
 
   const fetchPosts = async () => {
     try {
+      if (!supabase) {
+        // Use local data when Supabase is not configured
+        const localPosts = getLocalBlogPosts();
+        setPosts(localPosts);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('blog_posts')
         .select('*')
@@ -45,6 +60,34 @@ export default function AdminBlogScreen() {
 
   const handleSavePost = async () => {
     try {
+      if (!supabase) {
+        // Use local data when Supabase is not configured
+        const postData = {
+          title: formData.title,
+          content: formData.content,
+          excerpt: formData.excerpt,
+          author: formData.author,
+          is_published: formData.is_published,
+          featured_image_url: formData.featured_image_url,
+          tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+          published_at: formData.is_published ? new Date().toISOString() : undefined,
+        };
+
+        if (editingPost) {
+          updateLocalBlogPost(editingPost.id, postData);
+          Alert.alert('Success', 'Post updated successfully');
+        } else {
+          addLocalBlogPost(postData);
+          Alert.alert('Success', 'Post created successfully');
+        }
+        
+        setShowModal(false);
+        setEditingPost(null);
+        resetForm();
+        fetchPosts();
+        return;
+      }
+
       const postData = {
         ...formData,
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
@@ -89,6 +132,18 @@ export default function AdminBlogScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              if (!supabase) {
+                // Use local data when Supabase is not configured
+                const success = deleteLocalBlogPost(postId);
+                if (success) {
+                  Alert.alert('Success', 'Post deleted successfully');
+                  fetchPosts();
+                } else {
+                  Alert.alert('Error', 'Post not found');
+                }
+                return;
+              }
+
               const { error } = await supabase
                 .from('blog_posts')
                 .delete()
@@ -109,6 +164,16 @@ export default function AdminBlogScreen() {
 
   const togglePublishStatus = async (post: BlogPost) => {
     try {
+      if (!supabase) {
+        // Use local data when Supabase is not configured
+        updateLocalBlogPost(post.id, { 
+          is_published: !post.is_published,
+          published_at: !post.is_published ? new Date().toISOString() : undefined
+        });
+        fetchPosts();
+        return;
+      }
+
       const { error } = await supabase
         .from('blog_posts')
         .update({ 

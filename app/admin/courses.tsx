@@ -5,6 +5,18 @@ import { Plus, CreditCard as Edit, Trash2, Search, DollarSign, Users, ArrowLeft,
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Course, CourseVideo } from '@/types/database';
+import { 
+  getLocalCourses, 
+  addLocalCourse, 
+  updateLocalCourse, 
+  deleteLocalCourse,
+  getLocalCourseVideos,
+  addLocalCourseVideo,
+  updateLocalCourseVideo,
+  deleteLocalCourseVideo,
+  LocalCourse,
+  LocalCourseVideo 
+} from '@/lib/localData';
 
 export default function AdminCoursesScreen() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -42,6 +54,14 @@ export default function AdminCoursesScreen() {
 
   const fetchCourses = async () => {
     try {
+      if (!supabase) {
+        // Use local data when Supabase is not configured
+        const localCourses = getLocalCourses();
+        setCourses(localCourses);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('courses')
         .select('*')
@@ -59,6 +79,23 @@ export default function AdminCoursesScreen() {
 
   const handleSaveCourse = async () => {
     try {
+      if (!supabase) {
+        // Use local data when Supabase is not configured
+        if (editingCourse) {
+          updateLocalCourse(editingCourse.id, formData);
+          Alert.alert('Success', 'Course updated successfully');
+        } else {
+          addLocalCourse(formData);
+          Alert.alert('Success', 'Course created successfully');
+        }
+        
+        setShowModal(false);
+        setEditingCourse(null);
+        resetForm();
+        fetchCourses();
+        return;
+      }
+
       if (editingCourse) {
         const { error } = await supabase
           .from('courses')
@@ -88,6 +125,13 @@ export default function AdminCoursesScreen() {
 
   const fetchCourseVideos = async (courseId: string) => {
     try {
+      if (!supabase) {
+        // Use local data when Supabase is not configured
+        const localVideos = getLocalCourseVideos(courseId);
+        setCourseVideos(localVideos);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('course_videos')
         .select('*')
@@ -105,6 +149,29 @@ export default function AdminCoursesScreen() {
     if (!selectedCourse) return;
 
     try {
+      if (!supabase) {
+        // Use local data when Supabase is not configured
+        const videoData = {
+          ...videoFormData,
+          course_id: selectedCourse.id,
+          order_index: courseVideos.length,
+        };
+
+        if (editingVideo) {
+          updateLocalCourseVideo(editingVideo.id, videoData);
+          Alert.alert('Success', 'Video updated successfully');
+        } else {
+          addLocalCourseVideo(videoData);
+          Alert.alert('Success', 'Video added successfully');
+        }
+        
+        setShowVideoModal(false);
+        setEditingVideo(null);
+        resetVideoForm();
+        fetchCourseVideos(selectedCourse.id);
+        return;
+      }
+
       const videoData = {
         ...videoFormData,
         course_id: selectedCourse.id,
@@ -149,6 +216,20 @@ export default function AdminCoursesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              if (!supabase) {
+                // Use local data when Supabase is not configured
+                const success = deleteLocalCourseVideo(videoId);
+                if (success) {
+                  Alert.alert('Success', 'Video deleted successfully');
+                  if (selectedCourse) {
+                    fetchCourseVideos(selectedCourse.id);
+                  }
+                } else {
+                  Alert.alert('Error', 'Video not found');
+                }
+                return;
+              }
+
               const { error } = await supabase
                 .from('course_videos')
                 .delete()
@@ -180,6 +261,18 @@ export default function AdminCoursesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              if (!supabase) {
+                // Use local data when Supabase is not configured
+                const success = deleteLocalCourse(courseId);
+                if (success) {
+                  Alert.alert('Success', 'Course deleted successfully');
+                  fetchCourses();
+                } else {
+                  Alert.alert('Error', 'Course not found');
+                }
+                return;
+              }
+
               const { error } = await supabase
                 .from('courses')
                 .delete()
