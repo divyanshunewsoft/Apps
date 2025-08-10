@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert,
 import { LinearGradient } from 'expo-linear-gradient';
 import { Plus, CreditCard as Edit, Trash2, Search, ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { supabase } from '@/lib/supabase';
+import { blogService } from '@/lib/database';
+import { isSupabaseConnected } from '@/lib/supabase';
 import { BlogPost } from '@/types/database';
 import { 
   getLocalBlogPosts, 
@@ -36,7 +37,7 @@ export default function AdminBlogScreen() {
 
   const fetchPosts = async () => {
     try {
-      if (!supabase) {
+      if (!isSupabaseConnected()) {
         // Use local data when Supabase is not configured
         const localPosts = getLocalBlogPosts();
         setPosts(localPosts);
@@ -44,16 +45,14 @@ export default function AdminBlogScreen() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('blog_posts')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setPosts(data || []);
+      const posts = await blogService.getAll();
+      setPosts(posts);
     } catch (error) {
       console.error('Error fetching posts:', error);
-      Alert.alert('Error', 'Failed to fetch blog posts');
+      // Fallback to local data on error
+      const localPosts = getLocalBlogPosts();
+      setPosts(localPosts);
+      Alert.alert('Error', 'Failed to fetch blog posts from database. Using local data.');
     } finally {
       setLoading(false);
     }
@@ -61,7 +60,7 @@ export default function AdminBlogScreen() {
 
   const handleSavePost = async () => {
     try {
-      if (!supabase) {
+      if (!isSupabaseConnected()) {
         // Use local data when Supabase is not configured
         const postData = {
           title: formData.title,
@@ -91,25 +90,20 @@ export default function AdminBlogScreen() {
       }
 
       const postData = {
-        ...formData,
+        title: formData.title,
+        content: formData.content,
+        excerpt: formData.excerpt,
+        author: formData.author,
+        is_published: formData.is_published,
+        featured_image_url: formData.featured_image_url || null,
         tags: formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag),
-        published_at: formData.is_published ? new Date().toISOString() : null,
       };
 
       if (editingPost) {
-        const { error } = await supabase
-          .from('blog_posts')
-          .update(postData)
-          .eq('id', editingPost.id);
-        
-        if (error) throw error;
+        await blogService.update(editingPost.id, postData);
         Alert.alert('Success', 'Post updated successfully');
       } else {
-        const { error } = await supabase
-          .from('blog_posts')
-          .insert([postData]);
-        
-        if (error) throw error;
+        await blogService.create(postData);
         Alert.alert('Success', 'Post created successfully');
       }
       
@@ -134,7 +128,7 @@ export default function AdminBlogScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              if (!supabase) {
+              if (!isSupabaseConnected()) {
                 // Use local data when Supabase is not configured
                 const success = deleteLocalBlogPost(postId);
                 if (success) {
@@ -147,12 +141,7 @@ export default function AdminBlogScreen() {
                 return;
               }
 
-              const { error } = await supabase
-                .from('blog_posts')
-                .delete()
-                .eq('id', postId);
-              
-              if (error) throw error;
+              await blogService.delete(postId);
               Alert.alert('Success', 'Post deleted successfully');
               fetchPosts();
             } catch (error) {
@@ -167,7 +156,7 @@ export default function AdminBlogScreen() {
 
   const togglePublishStatus = async (post: BlogPost) => {
     try {
-      if (!supabase) {
+      if (!isSupabaseConnected()) {
         // Use local data when Supabase is not configured
         updateLocalBlogPost(post.id, { 
           is_published: !post.is_published,
@@ -178,15 +167,10 @@ export default function AdminBlogScreen() {
         return;
       }
 
-      const { error } = await supabase
-        .from('blog_posts')
-        .update({ 
-          is_published: !post.is_published,
-          published_at: !post.is_published ? new Date().toISOString() : null
-        })
-        .eq('id', post.id);
-      
-      if (error) throw error;
+      await blogService.update(post.id, {
+        is_published: !post.is_published,
+        published_at: !post.is_published ? new Date().toISOString() : null,
+      });
       fetchPosts();
     } catch (error) {
       console.error('Error updating post status:', error);

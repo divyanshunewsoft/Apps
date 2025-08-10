@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { LinearGradient } from 'expo-linear-gradient';
 import { Users, BookOpen, Video, Calendar, TrendingUp, Settings, LogOut, FileText } from 'lucide-react-native';
 import { router } from 'expo-router';
+import { DatabaseStatus } from '@/components/DatabaseStatus';
 
 interface DashboardStats {
   totalUsers: number;
@@ -54,6 +55,9 @@ export default function AdminDashboardScreen() {
           </TouchableOpacity>
         </View>
       </LinearGradient>
+
+      {/* Database Status */}
+      <DatabaseStatus />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Stats Overview */}

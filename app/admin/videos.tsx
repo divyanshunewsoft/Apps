@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert,
 import { LinearGradient } from 'expo-linear-gradient';
 import { Plus, CreditCard as Edit, Trash2, Search, Play, ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
-import { supabase } from '@/lib/supabase';
+import { videoService } from '@/lib/database';
+import { isSupabaseConnected } from '@/lib/supabase';
 import { Video } from '@/types/database';
 import { 
   getLocalVideos, 
@@ -38,7 +39,7 @@ export default function AdminVideosScreen() {
 
   const fetchVideos = async () => {
     try {
-      if (!supabase) {
+      if (!isSupabaseConnected()) {
         // Use local data when Supabase is not configured
         const localVideos = getLocalVideos();
         setVideos(localVideos);
@@ -46,16 +47,14 @@ export default function AdminVideosScreen() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('videos')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      setVideos(data || []);
+      const videos = await videoService.getAll();
+      setVideos(videos);
     } catch (error) {
       console.error('Error fetching videos:', error);
-      Alert.alert('Error', 'Failed to fetch videos');
+      // Fallback to local data on error
+      const localVideos = getLocalVideos();
+      setVideos(localVideos);
+      Alert.alert('Error', 'Failed to fetch videos from database. Using local data.');
     } finally {
       setLoading(false);
     }
@@ -69,7 +68,7 @@ export default function AdminVideosScreen() {
 
   const handleSaveVideo = async () => {
     try {
-      if (!supabase) {
+      if (!isSupabaseConnected()) {
         // Use local data when Supabase is not configured
         const videoData = {
           title: formData.title,
@@ -100,24 +99,22 @@ export default function AdminVideosScreen() {
       }
 
       const videoData = {
-        ...formData,
+        title: formData.title,
+        description: formData.description,
         youtube_id: extractYouTubeId(formData.youtube_id),
+        category: formData.category,
+        duration: formData.duration,
+        views_count: 0,
+        rating: 0.0,
+        is_premium: formData.is_premium,
+        thumbnail_url: formData.thumbnail_url || null,
       };
 
       if (editingVideo) {
-        const { error } = await supabase
-          .from('videos')
-          .update(videoData)
-          .eq('id', editingVideo.id);
-        
-        if (error) throw error;
+        await videoService.update(editingVideo.id, videoData);
         Alert.alert('Success', 'Video updated successfully');
       } else {
-        const { error } = await supabase
-          .from('videos')
-          .insert([videoData]);
-        
-        if (error) throw error;
+        await videoService.create(videoData);
         Alert.alert('Success', 'Video created successfully');
       }
       
@@ -142,7 +139,7 @@ export default function AdminVideosScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              if (!supabase) {
+              if (!isSupabaseConnected()) {
                 // Use local data when Supabase is not configured
                 const success = deleteLocalVideo(videoId);
                 if (success) {
@@ -155,12 +152,7 @@ export default function AdminVideosScreen() {
                 return;
               }
 
-              const { error } = await supabase
-                .from('videos')
-                .delete()
-                .eq('id', videoId);
-              
-              if (error) throw error;
+              await videoService.delete(videoId);
               Alert.alert('Success', 'Video deleted successfully');
               fetchVideos();
             } catch (error) {

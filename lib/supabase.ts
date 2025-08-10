@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { Database } from '@/types/supabase';
 
 // Use valid placeholder URLs to prevent initialization errors
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
@@ -12,15 +13,20 @@ const isValidSupabaseConfig = () => {
 };
 
 // Create Supabase client only if we have valid configuration
-let supabase: any = null;
+let supabase: ReturnType<typeof createClient<Database>> | null = null;
 
 try {
   if (isValidSupabaseConfig()) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
+      },
+      global: {
+        headers: {
+          'X-Client-Info': 'tcg-lean-coach-app',
+        },
       },
     });
   }
@@ -30,6 +36,27 @@ try {
 }
 
 export { supabase };
+
+// Database connection status
+export const isSupabaseConnected = () => {
+  return supabase !== null && isValidSupabaseConfig();
+};
+
+// Test database connection
+export const testConnection = async () => {
+  if (!supabase) {
+    throw new Error('Supabase client not initialized');
+  }
+  
+  try {
+    const { data, error } = await supabase.from('courses').select('count').limit(1);
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Database connection test failed:', error);
+    return false;
+  }
+};
 
 // Auth helpers
 export const signIn = async (email: string, password: string) => {
