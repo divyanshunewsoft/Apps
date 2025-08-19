@@ -1,4 +1,4 @@
-package com.boltexponativewind
+package com.tcgleancoach.app
 
 import android.app.Application
 import android.content.res.Configuration
